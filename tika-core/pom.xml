@@ -142,7 +142,16 @@
               org.apache.tika.config.TikaActivator
             </Bundle-Activator>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
-            <Import-Package>org.apache.commons.io.*;version="[2,3)",*</Import-Package>
+            <Embed-Dependency>
+              commons-io;
+              slf4j-api
+            </Embed-Dependency>
+            <Embed-Transitive>false</Embed-Transitive>
+            <Import-Package>
+              org.apache.xerces.util;resolution:=optional,
+              *
+            </Import-Package>
+            <_noimportjava>true</_noimportjava>
             <Export-Package>
               org.apache.tika.*
             </Export-Package>
