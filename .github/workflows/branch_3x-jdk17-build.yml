@@ -18,8 +18,13 @@
 name: branch_3x jdk17 build
 
 on:
-  push:
-    branches: [ alauda-3.2.2 ]
+  release:
+    types: [published]
+
+# 关键：显式赋予 workflow GITHUB_TOKEN 发布 package 的权限，并允许上传 release assets
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   build:
@@ -35,8 +40,6 @@ jobs:
         with:
           java-version: ${{ matrix.java }}
           distribution: 'temurin'
-      - name: Build with Maven
-        run: mvn clean test install javadoc:aggregate
       - name: Configure Maven for GitHub Packages
         run: |
           mkdir -p ~/.m2
@@ -63,3 +66,34 @@ jobs:
             -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/${{ github.repository }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload built artifacts to the Release
+        if: ${{ github.event_name == 'release' && github.event.release != null }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPLOAD_URL: ${{ github.event.release.upload_url }}
+        run: |
+          # Ensure we have the upload URL in a usable form (strip template part like {?name,label})
+          UPLOAD_URL_CLEAN="${UPLOAD_URL%\{*}"
+          echo "Release upload URL: $UPLOAD_URL_CLEAN"
+
+          # Move to the module target directory (adjust if artifacts are located elsewhere)
+          cd tika-core/target || { echo "tika-core/target not found"; exit 0; }
+
+          set -euo pipefail
+          uploaded=0
+          for f in *.jar *.zip *.tar.gz *.war; do
+            [ -e "$f" ] || continue
+            echo "Uploading $f to release..."
+            # GitHub Releases API: POST {upload_url}?name=assetname
+            curl --fail -sS -X POST \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$f" \
+              "${UPLOAD_URL_CLEAN}?name=$(basename "$f")"
+            echo "Uploaded $(basename "$f")"
+            uploaded=$((uploaded+1))
+          done
+
+          if [ "$uploaded" -eq 0 ]; then
+            echo "No artifacts found to upload in tika-core/target"
+          fi
