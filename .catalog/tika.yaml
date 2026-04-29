@@ -1,0 +1,24 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: devops-tika
+  title: Apache Tika
+  description: The Apache Tika toolkit detects and extracts metadata and text from over a thousand different file types such as PPT, XLS, and PDF.
+  annotations:
+    # github plugin
+    github.com/project-slug: AlaudaDevops/tika
+    # acp cicd plugin
+    # acp.cpaas.io/ci-pipeline: ""
+    acp.cpaas.io/instance: edge.alauda.cn
+    # sonarqube plugin
+    sonarqube.org/project-key: github.com-AlaudaDevops-tika
+    acp.cpaas.io/owner: kychen@alauda.io
+
+    # 组件属性，区别是否部署时必带的核心组件,可选值为 core 和 plugin。
+    acp.cpaas.io/functional-attributes: plugin
+
+spec:
+  type: library
+  system: system:alauda-devops-system
+  lifecycle: production
+  owner: devops
